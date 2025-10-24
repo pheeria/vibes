@@ -214,10 +214,9 @@ function renderBoard(state, isDarkMode = false) {
 
 function renderHighscores(lastScore) {
     const highscores = getHighscores(currentMode);
-    const modeLabel = currentMode === 'dark' ? ' (Hard Mode)' : '';
     
     if (highscores.length === 0) {
-        DOM.highscoreList.innerHTML = `<p class="empty-message">No games completed yet${modeLabel}. Start playing!</p>`;
+        DOM.highscoreList.innerHTML = `<p class="empty-message">No games completed yet. Start playing!</p>`;
         return;
     }
     
@@ -250,7 +249,7 @@ function renderHighscores(lastScore) {
 function showGameView() {
     DOM.gameView.classList.remove('hidden');
     DOM.highscoresSection.classList.add('hidden');
-    DOM.pageTitle.textContent = currentMode === 'dark' ? 'Memory Game (Hard Mode)' : 'Memory Game';
+    DOM.pageTitle.textContent = currentMode === 'dark' ? 'Hard Mode' : 'Memory Game';
     DOM.lightModeBtn.classList.toggle('active', currentMode === 'light');
     DOM.darkModeBtn.classList.toggle('active', currentMode === 'dark');
     DOM.showHighscoresBtn.classList.remove('active');
@@ -259,8 +258,7 @@ function showGameView() {
 function showHighscoresView() {
     DOM.gameView.classList.add('hidden');
     DOM.highscoresSection.classList.remove('hidden');
-    const modeLabel = currentMode === 'dark' ? ' (Hard Mode)' : '';
-    DOM.pageTitle.textContent = `Highscores${modeLabel}`;
+    DOM.pageTitle.textContent = 'Highscores';
     DOM.showHighscoresBtn.classList.add('active');
 }
 

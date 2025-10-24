@@ -485,6 +485,12 @@ body.dark-mode .highscore-item:hover {
     font-weight: 500;
     font-size: 0.9375rem;
     transition: color 0.3s ease;
+    font-variant-numeric: tabular-nums;
+}
+
+.highscore-stats span {
+    min-width: 4.5rem;
+    text-align: right;
 }
 
 .empty-message {

@@ -2,6 +2,9 @@ const gameBoard = document.getElementById('game-board');
 const movesDisplay = document.getElementById('moves');
 const matchesDisplay = document.getElementById('matches');
 const resetBtn = document.getElementById('reset-btn');
+const congratsScreen = document.getElementById('congratulations-screen');
+const finalMovesDisplay = document.getElementById('final-moves');
+const playAgainBtn = document.getElementById('play-again-btn');
 
 const symbols = ['🎮', '🎯', '🎨', '🎪', '🎭', '🎬', '🎸', '🎺'];
 let cards = [];
@@ -76,7 +79,7 @@ function checkMatch() {
             
             if (matches === symbols.length) {
                 setTimeout(() => {
-                    alert(`🎉 You won! Moves: ${moves}`);
+                    showCongratulations();
                 }, 300);
             }
         }, 500);
@@ -103,6 +106,19 @@ function updateStats() {
     matchesDisplay.textContent = matches;
 }
 
+function showCongratulations() {
+    finalMovesDisplay.textContent = moves;
+    congratsScreen.classList.remove('hidden');
+}
+
+function hideCongratulations() {
+    congratsScreen.classList.add('hidden');
+}
+
 resetBtn.addEventListener('click', initGame);
+playAgainBtn.addEventListener('click', () => {
+    hideCongratulations();
+    initGame();
+});
 
 initGame();

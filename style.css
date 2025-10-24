@@ -318,7 +318,7 @@ button:active::after {
 
 .bottom-toolbar {
     position: fixed;
-    bottom: 1.5rem;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -336,12 +336,7 @@ button:active::after {
     transition: all 0.3s ease;
 }
 
-/* Ensure toolbar floats above mobile browser controls */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-    .bottom-toolbar {
-        bottom: calc(1.5rem + env(safe-area-inset-bottom));
-    }
-}
+/* Remove the old safe-area support block that was duplicated */
 
 .toolbar-btn {
     width: 56px;

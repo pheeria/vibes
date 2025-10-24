@@ -372,7 +372,7 @@ function handleCardClick(cardId) {
                 stopTimer();
                 handleGameComplete(matchedState);
             }
-        }, 1000);
+        }, 600);
     }
 }
 

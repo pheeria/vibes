@@ -540,18 +540,18 @@ body.dark-mode .highscore-item:hover {
 }
 
 .congratulations-content {
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--card-bg);
     backdrop-filter: blur(40px) saturate(200%);
     -webkit-backdrop-filter: blur(40px) saturate(200%);
     padding: 2.5rem 2rem;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--card-border);
     text-align: center;
     max-width: 360px;
     width: 90%;
     animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 1px 2px 0 rgba(255, 255, 255, 0.9) inset,
-                0 -1px 1px 0 rgba(0, 0, 0, 0.02) inset,
+    box-shadow: 0 1px 2px 0 var(--card-shadow-1) inset,
+                0 -1px 1px 0 var(--card-shadow-2) inset,
                 0 20px 60px 0 rgba(0, 0, 0, 0.3);
     position: relative;
     overflow: hidden;
@@ -565,7 +565,7 @@ body.dark-mode .highscore-item:hover {
     right: 0;
     height: 40%;
     background: linear-gradient(180deg, 
-                rgba(255, 255, 255, 0.4) 0%, 
+                var(--card-gradient-top) 0%, 
                 rgba(255, 255, 255, 0) 100%);
     pointer-events: none;
 }
@@ -573,10 +573,17 @@ body.dark-mode .highscore-item:hover {
 .congratulations-content h2 {
     font-size: 1.75rem;
     font-weight: 700;
-    color: var(--title-color);
     margin-bottom: 0.5rem;
     position: relative;
     transition: color 0.3s ease;
+}
+
+body:not(.dark-mode) .congratulations-content h2 {
+    color: var(--title-color);
+}
+
+body.dark-mode .congratulations-content h2 {
+    color: var(--accent-light);
 }
 
 .congratulations-content p {

@@ -165,7 +165,6 @@ const DOM = {
     congratsScreen: document.getElementById('congratulations-screen'),
     finalMovesDisplay: document.getElementById('final-moves'),
     finalTimeDisplay: document.getElementById('final-time'),
-    playAgainBtn: document.getElementById('play-again-btn'),
     highscoreList: document.getElementById('highscore-list'),
     highscoresSection: document.getElementById('highscores-section'),
     gameView: document.getElementById('game-view'),
@@ -336,17 +335,31 @@ function handleGameComplete(state) {
     const score = { moves: state.moves, time: state.elapsedTime, timestamp: Date.now() };
     setCurrentState({ ...state, lastScore: score });
     
-    saveHighscore(score, currentMode);
+    // Check if best BEFORE saving
     const isBest = isBestScore(score, currentMode);
     
-    if (isBest) showCongratsModal(score);
+    // Now save the score
+    saveHighscore(score, currentMode);
     
+    // Reset the board immediately
+    const newState = createInitialState();
+    setCurrentState(newState);
+    renderBoard(newState, currentMode === 'dark');
+    
+    // Show congratulations modal if best score
+    if (isBest) {
+        showCongratsModal(score);
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            hideCongratsModal();
+        }, 3000);
+    }
+    
+    // Navigate to highscores after a short delay
     setTimeout(() => {
-        setCurrentState(createInitialState());
-        renderBoard(getCurrentState(), currentMode === 'dark');
         renderHighscores(score);
         showHighscoresView();
-    }, isBest ? 500 : 300);
+    }, isBest ? 3200 : 300);
 }
 
 function handleNewGame() {
@@ -358,7 +371,16 @@ function handleNewGame() {
 
 function handlePlayAgain() {
     hideCongratsModal();
-    handleNewGame();
+    setCurrentState(createInitialState());
+    renderBoard(getCurrentState(), currentMode === 'dark');
+    showGameView();
+}
+
+function handlePlayAgain() {
+    hideCongratsModal();
+    setCurrentState(createInitialState());
+    renderBoard(getCurrentState(), currentMode === 'dark');
+    showGameView();
 }
 
 function handleShowHighscores() {
@@ -413,7 +435,6 @@ DOM.gameBoard.addEventListener('click', (e) => {
 });
 
 DOM.resetBtn.addEventListener('click', handleNewGame);
-DOM.playAgainBtn.addEventListener('click', handlePlayAgain);
 DOM.lightModeBtn.addEventListener('click', switchToLightMode);
 DOM.darkModeBtn.addEventListener('click', switchToDarkMode);
 DOM.showHighscoresBtn.addEventListener('click', handleShowHighscores);

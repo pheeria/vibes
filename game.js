@@ -76,7 +76,7 @@ function setCurrentState(newState) {
     saveState();
 }
 
-function flipCard(state, cardId, isDarkMode = false) {
+function flipCard(state, cardId) {
     if (state.isProcessing) return state;
     
     const card = state.cards.find(c => c.id === cardId);
@@ -87,23 +87,11 @@ function flipCard(state, cardId, isDarkMode = false) {
     const newFlippedCards = [...state.flippedCards, card];
     const newStartTime = state.startTime || Date.now();
     
-    // Don't mark as revealed yet - we'll do it after showing
-    
-    if (newFlippedCards.length === 2) {
-        return {
-            ...state,
-            cards: state.cards,
-            flippedCards: newFlippedCards,
-            moves: state.moves + 1,
-            isProcessing: true,
-            startTime: newStartTime
-        };
-    }
-    
     return {
         ...state,
-        cards: state.cards,
         flippedCards: newFlippedCards,
+        moves: newFlippedCards.length === 2 ? state.moves + 1 : state.moves,
+        isProcessing: newFlippedCards.length === 2,
         startTime: newStartTime
     };
 }
@@ -113,39 +101,24 @@ function checkMatch(state) {
     
     const [card1, card2] = state.flippedCards;
     const isMatch = card1.symbol === card2.symbol;
+    const newMatches = isMatch ? state.matches + 1 : state.matches;
+    const isComplete = newMatches === symbols.length;
     
-    if (isMatch) {
-        const newCards = state.cards.map(c => 
-            c.id === card1.id || c.id === card2.id 
-                ? { ...c, matched: true }
-                : c
-        );
-        
-        const newMatches = state.matches + 1;
-        const isComplete = newMatches === symbols.length;
-        
-        return {
-            ...state,
-            cards: newCards,
-            flippedCards: [],
-            matches: newMatches,
-            isProcessing: false,
-            elapsedTime: isComplete ? Math.floor((Date.now() - state.startTime) / 1000) : state.elapsedTime
-        };
-    }
-    
-    // No match - mark both cards as revealed in dark mode
-    const newCards = state.cards.map(c => 
-        (c.id === card1.id || c.id === card2.id) && !c.revealed
-            ? { ...c, revealed: true }
-            : c
-    );
+    const newCards = state.cards.map(c => {
+        if (c.id === card1.id || c.id === card2.id) {
+            if (isMatch) return { ...c, matched: true };
+            if (!c.revealed) return { ...c, revealed: true };
+        }
+        return c;
+    });
     
     return {
         ...state,
         cards: newCards,
         flippedCards: [],
-        isProcessing: false
+        matches: newMatches,
+        isProcessing: false,
+        elapsedTime: isComplete ? Math.floor((Date.now() - state.startTime) / 1000) : state.elapsedTime
     };
 }
 
@@ -208,47 +181,35 @@ const DOM = {
 // ============================================================================
 
 function renderBoard(state, isDarkMode = false) {
-    if (isRendering) {
-        console.log('Skipping render - already rendering');
-        return;
-    }
+    if (isRendering) return;
     isRendering = true;
     
     DOM.gameBoard.innerHTML = '';
     
-    state.cards.forEach((card, index) => {
+    state.cards.forEach(card => {
         const cardElement = document.createElement('div');
         cardElement.className = 'card';
         cardElement.dataset.id = card.id;
         
         const isFlipped = state.flippedCards.some(c => c.id === card.id);
-        const isFirstReveal = !card.revealed; // First time seeing this card
+        const isFirstReveal = !card.revealed;
         
         if (card.matched) {
-            // Always show matched cards
             cardElement.classList.add('matched');
             cardElement.textContent = card.symbol;
         } else if (isFlipped && (!isDarkMode || isFirstReveal)) {
-            // Show emoji when flipped IF:
-            // - Light mode: always show
-            // - Dark mode: only show if first reveal (not revealed before)
             cardElement.classList.add('flipped');
             cardElement.textContent = card.symbol;
-        } else if (isFlipped && isDarkMode && !isFirstReveal) {
-            // Dark mode: card is selected but hidden (already revealed before)
+        } else if (isFlipped && isDarkMode) {
             cardElement.classList.add('selected');
         } else {
-            // Hidden cards
             cardElement.classList.add('hidden');
         }
         
         DOM.gameBoard.appendChild(cardElement);
     });
     
-    // Use setTimeout to release the lock after rendering completes
-    setTimeout(() => {
-        isRendering = false;
-    }, 0);
+    setTimeout(() => { isRendering = false; }, 0);
 }
 
 function renderHighscores(lastScore) {
@@ -346,13 +307,11 @@ function handleCardClick(cardId) {
     if (state.isProcessing) return;
     
     const card = state.cards.find(c => c.id === cardId);
-    if (!card || card.matched || state.flippedCards.some(c => c.id === cardId)) {
-        return; // Already flipped or matched
-    }
+    if (!card || card.matched || state.flippedCards.some(c => c.id === cardId)) return;
     
     const isDarkMode = currentMode === 'dark';
-    const newState = flipCard(state, cardId, isDarkMode);
-    if (newState === state) return; // No state change
+    const newState = flipCard(state, cardId);
+    if (newState === state) return;
     
     setCurrentState(newState);
     renderBoard(newState, isDarkMode);
@@ -363,8 +322,7 @@ function handleCardClick(cardId) {
     
     if (newState.flippedCards.length === 2) {
         setTimeout(() => {
-            const currentState = getCurrentState();
-            const matchedState = checkMatch(currentState);
+            const matchedState = checkMatch(getCurrentState());
             setCurrentState(matchedState);
             renderBoard(matchedState, isDarkMode);
             
@@ -377,27 +335,17 @@ function handleCardClick(cardId) {
 }
 
 function handleGameComplete(state) {
-    const score = {
-        moves: state.moves,
-        time: state.elapsedTime,
-        timestamp: Date.now()
-    };
+    const score = { moves: state.moves, time: state.elapsedTime, timestamp: Date.now() };
+    setCurrentState({ ...state, lastScore: score });
     
-    const updatedState = { ...state, lastScore: score };
-    setCurrentState(updatedState);
-    
-    const highscores = saveHighscore(score, currentMode);
+    saveHighscore(score, currentMode);
     const isBest = isBestScore(score, currentMode);
     
-    if (isBest) {
-        showCongratsModal(score);
-    }
+    if (isBest) showCongratsModal(score);
     
     setTimeout(() => {
-        const newState = createInitialState();
-        setCurrentState(newState);
-        const isDarkMode = currentMode === 'dark';
-        renderBoard(newState, isDarkMode);
+        setCurrentState(createInitialState());
+        renderBoard(getCurrentState(), currentMode === 'dark');
         renderHighscores(score);
         showHighscoresView();
     }, isBest ? 500 : 300);
@@ -405,12 +353,9 @@ function handleGameComplete(state) {
 
 function handleNewGame() {
     stopTimer();
-    const newState = createInitialState();
-    setCurrentState(newState);
-    const isDarkMode = currentMode === 'dark';
-    renderBoard(newState, isDarkMode);
+    setCurrentState(createInitialState());
+    renderBoard(getCurrentState(), currentMode === 'dark');
     showGameView();
-    saveState();
 }
 
 function handlePlayAgain() {
@@ -425,30 +370,24 @@ function handleShowHighscores() {
 }
 
 function switchToLightMode() {
-    if (currentMode === 'light') {
-        showGameView();
-        return;
-    }
+    if (currentMode === 'light') return showGameView();
     
     currentMode = 'light';
     document.body.classList.remove('dark-mode');
     stopTimer();
     saveState();
-    renderBoard(lightModeState, false);
+    renderBoard(getCurrentState(), false);
     showGameView();
 }
 
 function switchToDarkMode() {
-    if (currentMode === 'dark') {
-        showGameView();
-        return;
-    }
+    if (currentMode === 'dark') return showGameView();
     
     currentMode = 'dark';
     document.body.classList.add('dark-mode');
     stopTimer();
     saveState();
-    renderBoard(darkModeState, true);
+    renderBoard(getCurrentState(), true);
     showGameView();
 }
 

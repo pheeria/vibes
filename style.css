@@ -394,6 +394,13 @@ button:active::after {
                 0 2px 6px 0 var(--toolbar-btn-active-border);
 }
 
+.toolbar-btn.copied {
+    background: var(--toolbar-btn-active-bg);
+    color: var(--accent-light);
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+}
+
 .highscores-view {
     width: 100%;
     max-width: 640px;

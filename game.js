@@ -164,12 +164,25 @@ function handleShare() {
     const message = `${emoji} It only took me ${bestScore.time}s to solve in ${bestScore.moves} moves!\n${otherEmoji} Check it out on olzhas.de/vibes\n\n${visual}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(message).catch(() => {
+        navigator.clipboard.writeText(message).then(() => {
+            showCopyFeedback();
+        }).catch(() => {
             fallbackCopy(message);
         });
     } else {
         fallbackCopy(message);
     }
+}
+
+function showCopyFeedback() {
+    DOM.shareBtn.classList.add('copied');
+    const originalContent = DOM.shareBtn.innerHTML;
+    DOM.shareBtn.innerHTML = '<span>✓</span>';
+    
+    setTimeout(() => {
+        DOM.shareBtn.classList.remove('copied');
+        DOM.shareBtn.innerHTML = originalContent;
+    }, 1500);
 }
 
 function fallbackCopy(text) {
@@ -181,6 +194,7 @@ function fallbackCopy(text) {
     textarea.select();
     try {
         document.execCommand('copy');
+        showCopyFeedback();
     } catch (e) {
         alert('Could not copy. Here is your share text:\n\n' + text);
     }

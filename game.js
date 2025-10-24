@@ -28,6 +28,41 @@ let darkModeState = createInitialState();
 let currentMode = 'light'; // 'light' or 'dark'
 let isRendering = false;
 
+// Load saved state from localStorage
+function loadState() {
+    try {
+        const savedLightState = localStorage.getItem('memoryGameLightState');
+        const savedDarkState = localStorage.getItem('memoryGameDarkState');
+        const savedMode = localStorage.getItem('memoryGameMode');
+        
+        if (savedLightState) {
+            lightModeState = JSON.parse(savedLightState);
+        }
+        if (savedDarkState) {
+            darkModeState = JSON.parse(savedDarkState);
+        }
+        if (savedMode) {
+            currentMode = savedMode;
+            if (currentMode === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load saved state:', e);
+    }
+}
+
+// Save state to localStorage
+function saveState() {
+    try {
+        localStorage.setItem('memoryGameLightState', JSON.stringify(lightModeState));
+        localStorage.setItem('memoryGameDarkState', JSON.stringify(darkModeState));
+        localStorage.setItem('memoryGameMode', currentMode);
+    } catch (e) {
+        console.error('Failed to save state:', e);
+    }
+}
+
 function getCurrentState() {
     return currentMode === 'light' ? lightModeState : darkModeState;
 }
@@ -38,6 +73,7 @@ function setCurrentState(newState) {
     } else {
         darkModeState = newState;
     }
+    saveState();
 }
 
 function flipCard(state, cardId, isDarkMode = false) {
@@ -374,6 +410,7 @@ function handleNewGame() {
     const isDarkMode = currentMode === 'dark';
     renderBoard(newState, isDarkMode);
     showGameView();
+    saveState();
 }
 
 function handlePlayAgain() {
@@ -396,6 +433,7 @@ function switchToLightMode() {
     currentMode = 'light';
     document.body.classList.remove('dark-mode');
     stopTimer();
+    saveState();
     renderBoard(lightModeState, false);
     showGameView();
 }
@@ -409,6 +447,7 @@ function switchToDarkMode() {
     currentMode = 'dark';
     document.body.classList.add('dark-mode');
     stopTimer();
+    saveState();
     renderBoard(darkModeState, true);
     showGameView();
 }
@@ -416,6 +455,9 @@ function switchToDarkMode() {
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
+
+// Load saved state
+loadState();
 
 // Use event delegation for card clicks
 DOM.gameBoard.addEventListener('click', (e) => {

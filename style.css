@@ -79,7 +79,7 @@ body {
     align-items: center;
     min-height: 100vh;
     height: 100vh;
-    padding: 2rem 1rem 9rem 1rem;
+    padding: calc(2rem + env(safe-area-inset-top)) 1rem calc(9rem + env(safe-area-inset-bottom)) 1rem;
     background: var(--bg-color);
     transition: background-color 0.3s ease;
     overflow: hidden;
@@ -653,7 +653,7 @@ body.dark-mode .congratulations-content h2 {
 
 @media (max-width: 600px) {
     body {
-        padding: 1.5rem 0.5rem 8rem 0.5rem;
+        padding: calc(1.5rem + env(safe-area-inset-top)) 0.5rem calc(8rem + env(safe-area-inset-bottom)) 0.5rem;
     }
     
     header {
@@ -684,12 +684,5 @@ body.dark-mode .congratulations-content h2 {
     .highscore-stats {
         gap: 1rem;
         font-size: 0.875rem;
-    }
-    
-    /* Ensure toolbar is accessible on mobile */
-    @supports (padding-bottom: env(safe-area-inset-bottom)) {
-        body {
-            padding-bottom: calc(8rem + env(safe-area-inset-bottom));
-        }
     }
 }

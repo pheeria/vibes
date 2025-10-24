@@ -93,29 +93,63 @@ button:hover {
     background: #1976D2;
 }
 
-.toggle-highscores-btn {
+.bottom-toolbar {
     position: fixed;
-    bottom: 1rem;
-    left: 1rem;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #FF9800;
-    color: white;
-    border: none;
-    font-size: 2rem;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    border: 0.5px solid rgba(255, 255, 255, 0.5);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15),
+                0 4px 16px rgba(0, 0, 0, 0.1),
+                inset 0 0 0 0.5px rgba(255, 255, 255, 0.3);
+    z-index: 100;
+}
+
+.toolbar-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: #333;
+    border: 0.5px solid rgba(255, 255, 255, 0.6);
+    font-size: 1.75rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s;
-    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06),
+                inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0;
 }
 
-.toggle-highscores-btn:hover {
-    background: #F57C00;
-    transform: scale(1.1);
+.toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.6);
+    transform: scale(1.03);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.9);
+}
+
+.toolbar-btn:active {
+    transform: scale(0.97);
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08),
+                inset 0 1px 1px rgba(255, 255, 255, 0.7);
+}
+
+.toolbar-btn.active {
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12),
+                inset 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .highscores-view {

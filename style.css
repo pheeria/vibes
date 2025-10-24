@@ -142,6 +142,8 @@ h1 {
     user-select: none;
     position: relative;
     overflow: hidden;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .card::before {

@@ -1,12 +1,7 @@
-// ============================================================================
-// GAME STATE & LOGIC
-// ============================================================================
-
 const symbols = ['🎮', '🎯', '🎨', '🎪', '🎭', '🎬', '🎸', '🎺'];
 
 function createInitialState() {
-    const cardSymbols = [...symbols, ...symbols];
-    const cards = cardSymbols
+    const cards = [...symbols, ...symbols]
         .map((symbol, index) => ({ id: index, symbol, matched: false, revealed: false }))
         .sort(() => Math.random() - 0.5);
     
@@ -14,45 +9,32 @@ function createInitialState() {
         cards,
         flippedCards: [],
         moves: 0,
-        matches: 0,
         isProcessing: false,
-        startTime: null,
-        elapsedTime: 0,
-        lastScore: null
+        startTime: null
     };
 }
 
-// Separate state for each mode
 let lightModeState = createInitialState();
 let darkModeState = createInitialState();
-let currentMode = 'light'; // 'light' or 'dark'
-let isRendering = false;
+let currentMode = 'light';
 
-// Load saved state from localStorage
 function loadState() {
     try {
         const savedLightState = localStorage.getItem('memoryGameLightState');
         const savedDarkState = localStorage.getItem('memoryGameDarkState');
         const savedMode = localStorage.getItem('memoryGameMode');
         
-        if (savedLightState) {
-            lightModeState = JSON.parse(savedLightState);
-        }
-        if (savedDarkState) {
-            darkModeState = JSON.parse(savedDarkState);
-        }
+        if (savedLightState) lightModeState = JSON.parse(savedLightState);
+        if (savedDarkState) darkModeState = JSON.parse(savedDarkState);
         if (savedMode) {
             currentMode = savedMode;
-            if (currentMode === 'dark') {
-                document.body.classList.add('dark-mode');
-            }
+            if (currentMode === 'dark') document.body.classList.add('dark-mode');
         }
     } catch (e) {
         console.error('Failed to load saved state:', e);
     }
 }
 
-// Save state to localStorage
 function saveState() {
     try {
         localStorage.setItem('memoryGameLightState', JSON.stringify(lightModeState));
@@ -68,31 +50,23 @@ function getCurrentState() {
 }
 
 function setCurrentState(newState) {
-    if (currentMode === 'light') {
-        lightModeState = newState;
-    } else {
-        darkModeState = newState;
-    }
+    currentMode === 'light' ? lightModeState = newState : darkModeState = newState;
     saveState();
 }
 
 function flipCard(state, cardId) {
-    if (state.isProcessing) return state;
-    
     const card = state.cards.find(c => c.id === cardId);
-    if (!card || card.matched || state.flippedCards.some(c => c.id === cardId)) {
-        return state;
-    }
+    if (!card || card.matched || state.flippedCards.some(c => c.id === cardId)) return state;
     
-    const newFlippedCards = [...state.flippedCards, card];
-    const newStartTime = state.startTime || Date.now();
+    const flippedCards = [...state.flippedCards, card];
+    const moves = flippedCards.length === 2 ? state.moves + 1 : state.moves;
     
     return {
         ...state,
-        flippedCards: newFlippedCards,
-        moves: newFlippedCards.length === 2 ? state.moves + 1 : state.moves,
-        isProcessing: newFlippedCards.length === 2,
-        startTime: newStartTime
+        flippedCards,
+        moves,
+        isProcessing: flippedCards.length === 2,
+        startTime: state.startTime || Date.now()
     };
 }
 
@@ -101,34 +75,25 @@ function checkMatch(state) {
     
     const [card1, card2] = state.flippedCards;
     const isMatch = card1.symbol === card2.symbol;
-    const newMatches = isMatch ? state.matches + 1 : state.matches;
-    const isComplete = newMatches === symbols.length;
     
-    const newCards = state.cards.map(c => {
+    const cards = state.cards.map(c => {
         if (c.id === card1.id || c.id === card2.id) {
-            if (isMatch) return { ...c, matched: true };
-            if (!c.revealed) return { ...c, revealed: true };
+            return isMatch ? { ...c, matched: true } : { ...c, revealed: true };
         }
         return c;
     });
     
     return {
         ...state,
-        cards: newCards,
+        cards,
         flippedCards: [],
-        matches: newMatches,
-        isProcessing: false,
-        elapsedTime: isComplete ? Math.floor((Date.now() - state.startTime) / 1000) : state.elapsedTime
+        isProcessing: false
     };
 }
 
 function isGameComplete(state) {
-    return state.matches === symbols.length;
+    return state.cards.every(c => c.matched);
 }
-
-// ============================================================================
-// STORAGE
-// ============================================================================
 
 function getHighscores(mode = 'light') {
     const key = mode === 'light' ? 'memoryGameHighscores' : 'memoryGameHighscoresDark';
@@ -156,10 +121,6 @@ function isBestScore(score, mode = 'light') {
     return score.moves < best.moves || (score.moves === best.moves && score.time < best.time);
 }
 
-// ============================================================================
-// DOM REFERENCES
-// ============================================================================
-
 const DOM = {
     gameBoard: document.getElementById('game-board'),
     congratsScreen: document.getElementById('congratulations-screen'),
@@ -175,81 +136,56 @@ const DOM = {
     resetBtn: document.getElementById('reset-btn')
 };
 
-// ============================================================================
-// RENDERING
-// ============================================================================
-
 function renderBoard(state, isDarkMode = false) {
-    if (isRendering) return;
-    isRendering = true;
-    
-    // Get existing cards
     const existingCards = Array.from(DOM.gameBoard.querySelectorAll('.card'));
     
     state.cards.forEach(card => {
         const existingCard = existingCards.find(el => parseInt(el.dataset.id) === card.id);
         const isFlipped = state.flippedCards.some(c => c.id === card.id);
-        const isFirstReveal = !card.revealed;
         
-        // Determine the correct class and content
-        let newClass = 'card';
-        let newContent = '';
-        
+        let className, content;
         if (card.matched) {
-            newClass = 'card matched';
-            newContent = card.symbol;
-        } else if (isFlipped && (!isDarkMode || isFirstReveal)) {
-            newClass = 'card flipped';
-            newContent = card.symbol;
-        } else if (isFlipped && isDarkMode) {
-            newClass = 'card selected';
-            newContent = '';
+            className = 'card matched';
+            content = card.symbol;
+        } else if (isFlipped) {
+            if (isDarkMode && card.revealed) {
+                className = 'card selected';
+                content = '';
+            } else {
+                className = 'card flipped';
+                content = card.symbol;
+            }
         } else {
-            newClass = 'card hidden';
-            newContent = '';
+            className = 'card hidden';
+            content = '';
         }
         
-        // Only update if changed
         if (existingCard) {
-            if (existingCard.className !== newClass) {
-                existingCard.className = newClass;
-            }
-            if (existingCard.textContent !== newContent) {
-                existingCard.textContent = newContent;
-            }
-            // Remove focus to prevent persistent borders
+            existingCard.className = className;
+            existingCard.textContent = content;
             existingCard.blur();
         } else {
-            // Card doesn't exist, create it
             const cardElement = document.createElement('div');
-            cardElement.className = newClass;
+            cardElement.className = className;
             cardElement.dataset.id = card.id;
-            cardElement.textContent = newContent;
+            cardElement.textContent = content;
             DOM.gameBoard.appendChild(cardElement);
         }
     });
-    
-    setTimeout(() => { isRendering = false; }, 0);
 }
 
-function renderHighscores(lastScore) {
+function renderHighscores(lastScore = null) {
     const highscores = getHighscores(currentMode);
     
     if (highscores.length === 0) {
-        DOM.highscoreList.innerHTML = `<p class="empty-message">No games completed yet. Start playing!</p>`;
+        DOM.highscoreList.innerHTML = '<p class="empty-message">No games completed yet. Start playing!</p>';
         return;
     }
     
-    const scoresList = highscores.map((score, index) => {
-        const isLastScore = lastScore && 
-            score.moves === lastScore.moves && 
-            score.time === lastScore.time &&
-            score.timestamp === lastScore.timestamp;
-        
-        const highlightClass = isLastScore ? 'highlighted' : '';
-        
+    DOM.highscoreList.innerHTML = highscores.map((score, index) => {
+        const isLastScore = lastScore?.timestamp === score.timestamp;
         return `
-            <div class="highscore-item ${highlightClass}">
+            <div class="highscore-item ${isLastScore ? 'highlighted' : ''}">
                 <span class="highscore-rank">#${index + 1}</span>
                 <div class="highscore-stats">
                     <span>${score.moves} moves</span>
@@ -258,13 +194,7 @@ function renderHighscores(lastScore) {
             </div>
         `;
     }).join('');
-    
-    DOM.highscoreList.innerHTML = scoresList;
 }
-
-// ============================================================================
-// VIEW MANAGEMENT
-// ============================================================================
 
 function showGameView() {
     DOM.gameView.classList.remove('hidden');
@@ -292,60 +222,27 @@ function hideCongratsModal() {
     DOM.congratsScreen.classList.add('hidden');
 }
 
-// ============================================================================
-// TIMER
-// ============================================================================
-
-let timerInterval = null;
-
-function startTimer() {
-    if (timerInterval) return;
-    timerInterval = setInterval(() => {
-        const state = getCurrentState();
-        if (state.startTime) {
-            const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-            setCurrentState({ ...state, elapsedTime: elapsed });
-        }
-    }, 1000);
+function getElapsedTime(state) {
+    return state.startTime ? Math.floor((Date.now() - state.startTime) / 1000) : 0;
 }
-
-function stopTimer() {
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-}
-
-// ============================================================================
-// EVENT HANDLERS
-// ============================================================================
 
 function handleCardClick(cardId) {
     const state = getCurrentState();
     if (state.isProcessing) return;
     
-    const card = state.cards.find(c => c.id === cardId);
-    if (!card || card.matched || state.flippedCards.some(c => c.id === cardId)) return;
-    
-    const isDarkMode = currentMode === 'dark';
     const newState = flipCard(state, cardId);
     if (newState === state) return;
     
     setCurrentState(newState);
-    renderBoard(newState, isDarkMode);
-    
-    if (newState.flippedCards.length === 1 && !timerInterval) {
-        startTimer();
-    }
+    renderBoard(newState, currentMode === 'dark');
     
     if (newState.flippedCards.length === 2) {
         setTimeout(() => {
             const matchedState = checkMatch(getCurrentState());
             setCurrentState(matchedState);
-            renderBoard(matchedState, isDarkMode);
+            renderBoard(matchedState, currentMode === 'dark');
             
             if (isGameComplete(matchedState)) {
-                stopTimer();
                 handleGameComplete(matchedState);
             }
         }, 600);
@@ -353,30 +250,18 @@ function handleCardClick(cardId) {
 }
 
 function handleGameComplete(state) {
-    const score = { moves: state.moves, time: state.elapsedTime, timestamp: Date.now() };
-    setCurrentState({ ...state, lastScore: score });
-    
-    // Check if best BEFORE saving
+    const score = { moves: state.moves, time: getElapsedTime(state), timestamp: Date.now() };
     const isBest = isBestScore(score, currentMode);
     
-    // Now save the score
     saveHighscore(score, currentMode);
+    setCurrentState(createInitialState());
+    renderBoard(getCurrentState(), currentMode === 'dark');
     
-    // Reset the board immediately
-    const newState = createInitialState();
-    setCurrentState(newState);
-    renderBoard(newState, currentMode === 'dark');
-    
-    // Show congratulations modal if best score
     if (isBest) {
         showCongratsModal(score);
-        // Auto-hide after 3 seconds
-        setTimeout(() => {
-            hideCongratsModal();
-        }, 3000);
+        setTimeout(hideCongratsModal, 3000);
     }
     
-    // Navigate to highscores after a short delay
     setTimeout(() => {
         renderHighscores(score);
         showHighscoresView();
@@ -384,29 +269,13 @@ function handleGameComplete(state) {
 }
 
 function handleNewGame() {
-    stopTimer();
-    setCurrentState(createInitialState());
-    renderBoard(getCurrentState(), currentMode === 'dark');
-    showGameView();
-}
-
-function handlePlayAgain() {
-    hideCongratsModal();
-    setCurrentState(createInitialState());
-    renderBoard(getCurrentState(), currentMode === 'dark');
-    showGameView();
-}
-
-function handlePlayAgain() {
-    hideCongratsModal();
     setCurrentState(createInitialState());
     renderBoard(getCurrentState(), currentMode === 'dark');
     showGameView();
 }
 
 function handleShowHighscores() {
-    const state = getCurrentState();
-    renderHighscores(state.lastScore);
+    renderHighscores();
     showHighscoresView();
 }
 
@@ -415,7 +284,6 @@ function switchToLightMode() {
     
     currentMode = 'light';
     document.body.classList.remove('dark-mode');
-    stopTimer();
     saveState();
     renderBoard(getCurrentState(), false);
     showGameView();
@@ -426,31 +294,19 @@ function switchToDarkMode() {
     
     currentMode = 'dark';
     document.body.classList.add('dark-mode');
-    stopTimer();
     saveState();
     renderBoard(getCurrentState(), true);
     showGameView();
 }
 
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
-
-// Load saved state
 loadState();
 
-// Use event delegation for card clicks
 DOM.gameBoard.addEventListener('click', (e) => {
     const cardElement = e.target.closest('.card');
     if (!cardElement) return;
     
     const cardId = parseInt(cardElement.dataset.id);
-    if (isNaN(cardId)) return;
-    
-    // Don't handle clicks on matched or flipped cards
-    if (cardElement.classList.contains('matched') || cardElement.classList.contains('flipped')) {
-        return;
-    }
+    if (isNaN(cardId) || cardElement.classList.contains('matched') || cardElement.classList.contains('flipped')) return;
     
     handleCardClick(cardId);
 });
@@ -460,22 +316,16 @@ DOM.lightModeBtn.addEventListener('click', switchToLightMode);
 DOM.darkModeBtn.addEventListener('click', switchToDarkMode);
 DOM.showHighscoresBtn.addEventListener('click', handleShowHighscores);
 
-// Add ripple effect tracking
 document.addEventListener('mousedown', (e) => {
     const target = e.target.closest('.card, .toolbar-btn, button');
-    if (target) {
-        // Don't apply ripple to matched or flipped cards
-        if (target.classList.contains('card') && 
-            (target.classList.contains('matched') || target.classList.contains('flipped'))) {
-            return;
-        }
-        
-        const rect = target.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        target.style.setProperty('--ripple-x', `${x}%`);
-        target.style.setProperty('--ripple-y', `${y}%`);
-    }
+    if (!target) return;
+    if (target.classList.contains('card') && (target.classList.contains('matched') || target.classList.contains('flipped'))) return;
+    
+    const rect = target.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    target.style.setProperty('--ripple-x', `${x}%`);
+    target.style.setProperty('--ripple-y', `${y}%`);
 });
 
 renderBoard(getCurrentState(), currentMode === 'dark');

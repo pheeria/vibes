@@ -142,8 +142,16 @@ h1 {
     user-select: none;
     position: relative;
     overflow: hidden;
-    outline: none;
+    outline: none !important;
     -webkit-tap-highlight-color: transparent;
+}
+
+.card:focus {
+    outline: none !important;
+}
+
+.card:focus-visible {
+    outline: none !important;
 }
 
 .card::before {
@@ -179,17 +187,19 @@ h1 {
     transform: scale(0);
 }
 
-.card:hover:not(.matched):not(.flipped):not(.selected) {
-    transform: scale(1.03);
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 1px 2px 0 rgba(255, 255, 255, 0.9) inset,
-                0 -1px 1px 0 rgba(0, 0, 0, 0.02) inset,
-                0 6px 16px 0 rgba(0, 0, 0, 0.1),
-                0 16px 48px 0 rgba(0, 0, 0, 0.08);
-}
+@media (hover: hover) and (pointer: fine) {
+    .card:hover:not(.matched):not(.flipped):not(.selected) {
+        transform: scale(1.03);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 1px 2px 0 rgba(255, 255, 255, 0.9) inset,
+                    0 -1px 1px 0 rgba(0, 0, 0, 0.02) inset,
+                    0 6px 16px 0 rgba(0, 0, 0, 0.1),
+                    0 16px 48px 0 rgba(0, 0, 0, 0.08);
+    }
 
-body.dark-mode .card:hover:not(.matched):not(.flipped):not(.selected) {
-    background: rgba(50, 50, 50, 0.92);
+    body.dark-mode .card:hover:not(.matched):not(.flipped):not(.selected) {
+        background: rgba(50, 50, 50, 0.92);
+    }
 }
 
 .card:active:not(.matched):not(.flipped):not(.selected) {

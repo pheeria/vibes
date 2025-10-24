@@ -163,34 +163,71 @@ function handleShare() {
     const visual = createShareVisual(bestScore.moves, bestScore.mode);
     const message = `${emoji} It only took me ${bestScore.time}s to solve in ${bestScore.moves} moves!\n${otherEmoji} Check it out on olzhas.de/vibes\n\n${visual}`;
     
-    // iOS requires clipboard write to be in direct user interaction context
-    if (navigator.clipboard && navigator.clipboard.write) {
-        // Modern approach with ClipboardItem (works better on iOS)
-        const blob = new Blob([message], { type: 'text/plain' });
-        const clipboardItem = new ClipboardItem({ 'text/plain': blob });
-        
-        navigator.clipboard.write([clipboardItem]).then(() => {
+    // Use Web Share API only for iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    if (isIOS && navigator.share) {
+        navigator.share({
+            text: message
+        }).then(() => {
             showCopyFeedback();
-        }).catch(() => {
-            // Fallback to writeText
-            if (navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(message).then(() => {
-                    showCopyFeedback();
-                }).catch(() => {
-                    fallbackCopy(message);
-                });
-            } else {
-                fallbackCopy(message);
+        }).catch((error) => {
+            // User cancelled - don't show error
+            if (error.name !== 'AbortError') {
+                console.error('Share failed:', error);
             }
         });
-    } else if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(message).then(() => {
+    } else {
+        // Desktop and Android - use clipboard
+        copyToClipboard(message);
+    }
+}
+
+function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
             showCopyFeedback();
         }).catch(() => {
-            fallbackCopy(message);
+            execCommandCopy(text);
         });
     } else {
-        fallbackCopy(message);
+        execCommandCopy(text);
+    }
+}
+
+function execCommandCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.top = '0';
+    textarea.style.left = '0';
+    textarea.style.width = '2em';
+    textarea.style.height = '2em';
+    textarea.style.padding = '0';
+    textarea.style.border = 'none';
+    textarea.style.outline = 'none';
+    textarea.style.boxShadow = 'none';
+    textarea.style.background = 'transparent';
+    textarea.style.fontSize = '16px';
+    textarea.setAttribute('readonly', '');
+    
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    
+    let success = false;
+    try {
+        success = document.execCommand('copy');
+    } catch (e) {
+        console.error('Copy failed:', e);
+    }
+    
+    document.body.removeChild(textarea);
+    
+    if (success) {
+        showCopyFeedback();
+    } else {
+        prompt('Copy this text:', text);
     }
 }
 
@@ -203,39 +240,6 @@ function showCopyFeedback() {
         DOM.shareBtn.classList.remove('copied');
         DOM.shareBtn.innerHTML = originalContent;
     }, 1500);
-}
-
-function fallbackCopy(text) {
-    // iOS-specific: Must be in visible area
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'absolute';
-    textarea.style.left = '0';
-    textarea.style.top = '0';
-    textarea.style.opacity = '1';
-    textarea.style.fontSize = '16px'; // Prevent iOS zoom
-    textarea.setAttribute('readonly', '');
-    document.body.appendChild(textarea);
-    
-    // iOS requires focus and specific selection
-    textarea.focus();
-    textarea.setSelectionRange(0, text.length);
-    
-    let success = false;
-    try {
-        success = document.execCommand('copy');
-        if (success) {
-            showCopyFeedback();
-        }
-    } catch (e) {
-        console.error('Copy failed:', e);
-    }
-    
-    document.body.removeChild(textarea);
-    
-    if (!success) {
-        alert('Could not copy. Here is your share text:\n\n' + text);
-    }
 }
 
 function saveHighscore(score, mode = 'light') {

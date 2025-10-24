@@ -133,7 +133,7 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: 3.5rem;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 1px 2px 0 var(--card-shadow-1) inset,
                 0 -1px 1px 0 var(--card-shadow-2) inset,
@@ -637,9 +637,32 @@ body.dark-mode .congratulations-content h2 {
     }
 }
 
+@media (min-width: 1920px) {
+    header {
+        margin-top: 2rem;
+    }
+    
+    .game-board {
+        max-width: 900px;
+        gap: 1.5rem;
+    }
+    
+    .card {
+        font-size: 5rem;
+    }
+    
+    h1 {
+        font-size: 2.5rem;
+    }
+}
+
 @media (max-width: 600px) {
     body {
         padding: 1.5rem 0.5rem 8rem 0.5rem;
+    }
+    
+    header {
+        margin-top: 1rem;
     }
 
     h1 {
@@ -652,7 +675,7 @@ body.dark-mode .congratulations-content h2 {
     }
 
     .card {
-        font-size: 2.25rem;
+        font-size: 2.75rem;
     }
 
     .congratulations-content {

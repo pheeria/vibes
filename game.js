@@ -158,14 +158,13 @@ function handleShare() {
         return;
     }
     
-    const emoji = bestScore.mode === 'light' ? '🩵' : '💛';
+    const emoji = bestScore.mode === 'light' ? '💙' : '💛';
+    const otherEmoji = bestScore.mode === 'light' ? '💛' : '💙';
     const visual = createShareVisual(bestScore.moves, bestScore.mode);
-    const message = `${emoji} It only took me ${bestScore.time}s to solve in ${bestScore.moves} moves!\n\n${visual}`;
+    const message = `${emoji} It only took me ${bestScore.time}s to solve in ${bestScore.moves} moves!\n${otherEmoji} Check it out on olzhas.de/vibes\n\n${visual}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(message).then(() => {
-            alert('Copied to clipboard!');
-        }).catch(() => {
+        navigator.clipboard.writeText(message).catch(() => {
             fallbackCopy(message);
         });
     } else {
@@ -182,7 +181,6 @@ function fallbackCopy(text) {
     textarea.select();
     try {
         document.execCommand('copy');
-        alert('Copied to clipboard!');
     } catch (e) {
         alert('Could not copy. Here is your share text:\n\n' + text);
     }

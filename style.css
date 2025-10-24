@@ -66,7 +66,7 @@ body {
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding: 2rem 1rem 7rem 1rem;
+    padding: 2rem 1rem 9rem 1rem;
     background: var(--bg-color);
     transition: background-color 0.3s ease;
 }
@@ -300,34 +300,41 @@ button:active::after {
 
 .bottom-toolbar {
     position: fixed;
-    bottom: 0.5rem;
+    bottom: 1.5rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 0.375rem;
-    padding: 0.5rem;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
     background: var(--toolbar-bg);
     backdrop-filter: blur(50px) saturate(220%);
     -webkit-backdrop-filter: blur(50px) saturate(220%);
     border: 1px solid var(--card-border);
-    border-radius: 16px;
+    border-radius: 18px;
     box-shadow: 0 1px 2px 0 var(--card-shadow-1) inset,
                 0 -1px 1px 0 var(--card-shadow-2) inset,
                 0 12px 40px 0 rgba(0, 0, 0, 0.15);
-    z-index: 100;
+    z-index: 9999;
     transition: all 0.3s ease;
 }
 
+/* Ensure toolbar floats above mobile browser controls */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .bottom-toolbar {
+        bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    }
+}
+
 .toolbar-btn {
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     background: var(--toolbar-btn-bg);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     color: var(--text-secondary);
     border: 1px solid var(--toolbar-btn-border);
-    font-size: 1.625rem;
+    font-size: 1.75rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -358,7 +365,7 @@ button:active::after {
     content: '';
     position: absolute;
     inset: 0;
-    border-radius: 12px;
+    border-radius: 14px;
     opacity: 0;
     background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), 
                 rgba(255, 255, 255, 0.6) 0%, 
@@ -601,7 +608,7 @@ body.dark-mode .highscore-item:hover {
 
 @media (max-width: 600px) {
     body {
-        padding: 1.5rem 0.5rem 6rem 0.5rem;
+        padding: 1.5rem 0.5rem 8rem 0.5rem;
     }
 
     h1 {
@@ -628,5 +635,12 @@ body.dark-mode .highscore-item:hover {
     .highscore-stats {
         gap: 1rem;
         font-size: 0.875rem;
+    }
+    
+    /* Ensure toolbar is accessible on mobile */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        body {
+            padding-bottom: calc(8rem + env(safe-area-inset-bottom));
+        }
     }
 }

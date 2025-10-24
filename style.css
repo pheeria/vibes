@@ -22,7 +22,7 @@ header {
 
 h1 {
     font-size: 2rem;
-    color: #333;
+    color: #1976D2;
 }
 
 .game-view {
@@ -63,12 +63,12 @@ h1 {
 }
 
 .card.flipped {
-    background: #4CAF50;
+    background: #2196F3;
     color: white;
 }
 
 .card.matched {
-    background: #8BC34A;
+    background: #1976D2;
     color: white;
     cursor: default;
 }
@@ -182,8 +182,8 @@ button:hover {
 }
 
 .highscore-item.highlighted {
-    background: #FFF9C4;
-    border-left: 4px solid #FF9800;
+    background: #E3F2FD;
+    border-left: 4px solid #2196F3;
     padding-left: calc(0.75rem - 4px);
 }
 

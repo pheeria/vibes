@@ -183,29 +183,50 @@ function renderBoard(state, isDarkMode = false) {
     if (isRendering) return;
     isRendering = true;
     
-    DOM.gameBoard.innerHTML = '';
+    // Get existing cards
+    const existingCards = Array.from(DOM.gameBoard.querySelectorAll('.card'));
     
     state.cards.forEach(card => {
-        const cardElement = document.createElement('div');
-        cardElement.className = 'card';
-        cardElement.dataset.id = card.id;
-        
+        const existingCard = existingCards.find(el => parseInt(el.dataset.id) === card.id);
         const isFlipped = state.flippedCards.some(c => c.id === card.id);
         const isFirstReveal = !card.revealed;
         
+        // Determine the correct class and content
+        let newClass = 'card';
+        let newContent = '';
+        
         if (card.matched) {
-            cardElement.classList.add('matched');
-            cardElement.textContent = card.symbol;
+            newClass = 'card matched';
+            newContent = card.symbol;
         } else if (isFlipped && (!isDarkMode || isFirstReveal)) {
-            cardElement.classList.add('flipped');
-            cardElement.textContent = card.symbol;
+            newClass = 'card flipped';
+            newContent = card.symbol;
         } else if (isFlipped && isDarkMode) {
-            cardElement.classList.add('selected');
+            newClass = 'card selected';
+            newContent = '';
         } else {
-            cardElement.classList.add('hidden');
+            newClass = 'card hidden';
+            newContent = '';
         }
         
-        DOM.gameBoard.appendChild(cardElement);
+        // Only update if changed
+        if (existingCard) {
+            if (existingCard.className !== newClass) {
+                existingCard.className = newClass;
+            }
+            if (existingCard.textContent !== newContent) {
+                existingCard.textContent = newContent;
+            }
+            // Remove focus to prevent persistent borders
+            existingCard.blur();
+        } else {
+            // Card doesn't exist, create it
+            const cardElement = document.createElement('div');
+            cardElement.className = newClass;
+            cardElement.dataset.id = card.id;
+            cardElement.textContent = newContent;
+            DOM.gameBoard.appendChild(cardElement);
+        }
     });
     
     setTimeout(() => { isRendering = false; }, 0);

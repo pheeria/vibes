@@ -9,10 +9,6 @@
 <body>
     <header>
         <h1>Memory Game</h1>
-        <div class="stats">
-            <div>Moves: <span id="moves">0</span></div>
-            <div>Matches: <span id="matches">0</span></div>
-        </div>
     </header>
 
     <main class="game-board" id="game-board">
@@ -21,12 +17,20 @@
 
     <button id="reset-btn">New Game</button>
 
+    <section class="highscores">
+        <h2>Highscores</h2>
+        <div id="highscore-list" class="highscore-list">
+            <p class="empty-message">No games completed yet. Start playing!</p>
+        </div>
+    </section>
+
     <div id="congratulations-screen" class="congratulations-screen hidden">
         <div class="congratulations-content">
             <h2>🎉 Congratulations! 🎉</h2>
             <p>You completed the game!</p>
             <div class="final-stats">
                 <div>Total Moves: <strong id="final-moves">0</strong></div>
+                <div>Time: <strong id="final-time">0:00</strong></div>
             </div>
             <button id="play-again-btn">Play Again</button>
         </div>

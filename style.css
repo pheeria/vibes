@@ -23,15 +23,6 @@ header {
 h1 {
     font-size: 2rem;
     color: #333;
-    margin-bottom: 0.5rem;
-}
-
-.stats {
-    display: flex;
-    gap: 2rem;
-    justify-content: center;
-    font-size: 1rem;
-    color: #666;
 }
 
 .game-board {
@@ -91,6 +82,57 @@ button:hover {
     background: #1976D2;
 }
 
+.highscores {
+    margin-top: 3rem;
+    width: 100%;
+    max-width: 600px;
+    padding: 0 1rem;
+}
+
+.highscores h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.highscore-list {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 2px solid #ddd;
+}
+
+.highscore-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.highscore-item:last-child {
+    border-bottom: none;
+}
+
+.highscore-rank {
+    font-weight: bold;
+    color: #666;
+    min-width: 2rem;
+}
+
+.highscore-stats {
+    display: flex;
+    gap: 1.5rem;
+    color: #666;
+}
+
+.empty-message {
+    text-align: center;
+    color: #999;
+    padding: 1rem;
+}
+
 .congratulations-screen {
     position: fixed;
     top: 0;
@@ -138,6 +180,10 @@ button:hover {
     margin-bottom: 2rem;
     font-size: 1.125rem;
     color: #333;
+}
+
+.final-stats div {
+    margin: 0.5rem 0;
 }
 
 @keyframes fadeIn {

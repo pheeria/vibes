@@ -163,7 +163,27 @@ function handleShare() {
     const visual = createShareVisual(bestScore.moves, bestScore.mode);
     const message = `${emoji} It only took me ${bestScore.time}s to solve in ${bestScore.moves} moves!\n${otherEmoji} Check it out on olzhas.de/vibes\n\n${visual}`;
     
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    // iOS requires clipboard write to be in direct user interaction context
+    if (navigator.clipboard && navigator.clipboard.write) {
+        // Modern approach with ClipboardItem (works better on iOS)
+        const blob = new Blob([message], { type: 'text/plain' });
+        const clipboardItem = new ClipboardItem({ 'text/plain': blob });
+        
+        navigator.clipboard.write([clipboardItem]).then(() => {
+            showCopyFeedback();
+        }).catch(() => {
+            // Fallback to writeText
+            if (navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(message).then(() => {
+                    showCopyFeedback();
+                }).catch(() => {
+                    fallbackCopy(message);
+                });
+            } else {
+                fallbackCopy(message);
+            }
+        });
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(message).then(() => {
             showCopyFeedback();
         }).catch(() => {
@@ -186,19 +206,36 @@ function showCopyFeedback() {
 }
 
 function fallbackCopy(text) {
+    // iOS-specific: Must be in visible area
     const textarea = document.createElement('textarea');
     textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
+    textarea.style.position = 'absolute';
+    textarea.style.left = '0';
+    textarea.style.top = '0';
+    textarea.style.opacity = '1';
+    textarea.style.fontSize = '16px'; // Prevent iOS zoom
+    textarea.setAttribute('readonly', '');
     document.body.appendChild(textarea);
-    textarea.select();
+    
+    // iOS requires focus and specific selection
+    textarea.focus();
+    textarea.setSelectionRange(0, text.length);
+    
+    let success = false;
     try {
-        document.execCommand('copy');
-        showCopyFeedback();
+        success = document.execCommand('copy');
+        if (success) {
+            showCopyFeedback();
+        }
     } catch (e) {
+        console.error('Copy failed:', e);
+    }
+    
+    document.body.removeChild(textarea);
+    
+    if (!success) {
         alert('Could not copy. Here is your share text:\n\n' + text);
     }
-    document.body.removeChild(textarea);
 }
 
 function saveHighscore(score, mode = 'light') {

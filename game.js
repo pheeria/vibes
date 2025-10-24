@@ -1,59 +1,150 @@
-const gameBoard = document.getElementById('game-board');
-const congratsScreen = document.getElementById('congratulations-screen');
-const finalMovesDisplay = document.getElementById('final-moves');
-const finalTimeDisplay = document.getElementById('final-time');
-const playAgainBtn = document.getElementById('play-again-btn');
-const highscoreList = document.getElementById('highscore-list');
-const highscoresSection = document.getElementById('highscores-section');
-const gameView = document.getElementById('game-view');
-const pageTitle = document.getElementById('page-title');
-const showGameBtn = document.getElementById('show-game-btn');
-const showHighscoresBtn = document.getElementById('show-highscores-btn');
-const resetBtn = document.getElementById('reset-btn');
+// ============================================================================
+// GAME STATE & LOGIC (Pure Functions)
+// ============================================================================
 
 const symbols = ['🎮', '🎯', '🎨', '🎪', '🎭', '🎬', '🎸', '🎺'];
-let cards = [];
-let flippedCards = [];
-let moves = 0;
-let matches = 0;
-let isProcessing = false;
-let startTime = null;
-let timerInterval = null;
-let elapsedTime = 0;
-let showingHighscores = false;
-let lastScore = null;
 
-function initGame() {
-    cards = [...symbols, ...symbols]
-        .map((symbol, index) => ({ id: index, symbol, matched: false }))
-        .sort(() => Math.random() - 0.5);
-    
-    flippedCards = [];
-    moves = 0;
-    matches = 0;
-    isProcessing = false;
-    startTime = null;
-    elapsedTime = 0;
-    
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-    
-    showingHighscores = false;
-    gameView.classList.remove('hidden');
-    pageTitle.textContent = 'Memory Game';
-    highscoresSection.classList.add('hidden');
-    showGameBtn.classList.add('active');
-    showHighscoresBtn.classList.remove('active');
-    lastScore = null;
-    renderBoard();
+function createInitialState() {
+    return {
+        cards: shuffleCards([...symbols, ...symbols]),
+        flippedCards: [],
+        moves: 0,
+        matches: 0,
+        isProcessing: false,
+        startTime: null,
+        elapsedTime: 0,
+        lastScore: null
+    };
 }
 
-function renderBoard() {
-    gameBoard.innerHTML = '';
+function shuffleCards(cardSymbols) {
+    return cardSymbols
+        .map((symbol, index) => ({ id: index, symbol, matched: false }))
+        .sort(() => Math.random() - 0.5);
+}
+
+function flipCard(state, cardId) {
+    if (state.isProcessing) return state;
     
-    cards.forEach((card) => {
+    const card = state.cards.find(c => c.id === cardId);
+    if (!card || card.matched || state.flippedCards.includes(card)) {
+        return state;
+    }
+    
+    const newFlippedCards = [...state.flippedCards, card];
+    const newStartTime = state.startTime || Date.now();
+    
+    if (newFlippedCards.length === 2) {
+        return {
+            ...state,
+            flippedCards: newFlippedCards,
+            moves: state.moves + 1,
+            isProcessing: true,
+            startTime: newStartTime
+        };
+    }
+    
+    return {
+        ...state,
+        flippedCards: newFlippedCards,
+        startTime: newStartTime
+    };
+}
+
+function checkMatch(state) {
+    if (state.flippedCards.length !== 2) return state;
+    
+    const [card1, card2] = state.flippedCards;
+    const isMatch = card1.symbol === card2.symbol;
+    
+    if (isMatch) {
+        const newCards = state.cards.map(c => 
+            c.id === card1.id || c.id === card2.id 
+                ? { ...c, matched: true }
+                : c
+        );
+        
+        const newMatches = state.matches + 1;
+        const isGameComplete = newMatches === symbols.length;
+        
+        return {
+            ...state,
+            cards: newCards,
+            flippedCards: [],
+            matches: newMatches,
+            isProcessing: false,
+            elapsedTime: isGameComplete ? Math.floor((Date.now() - state.startTime) / 1000) : state.elapsedTime
+        };
+    }
+    
+    return {
+        ...state,
+        flippedCards: [],
+        isProcessing: false
+    };
+}
+
+function isGameComplete(state) {
+    return state.matches === symbols.length;
+}
+
+// ============================================================================
+// HIGHSCORE LOGIC (Pure Functions)
+// ============================================================================
+
+function saveHighscore(moves, time) {
+    const highscores = getHighscores();
+    const newScore = { moves, time, date: new Date().toISOString() };
+    
+    const isBestScore = highscores.length === 0 || 
+                       moves < highscores[0].moves || 
+                       (moves === highscores[0].moves && time < highscores[0].time);
+    
+    highscores.push(newScore);
+    highscores.sort((a, b) => {
+        if (a.moves !== b.moves) return a.moves - b.moves;
+        return a.time - b.time;
+    });
+    
+    const topScores = highscores.slice(0, 10);
+    localStorage.setItem('memoryGameHighscores', JSON.stringify(topScores));
+    
+    return { isBestScore, score: newScore };
+}
+
+function getHighscores() {
+    return JSON.parse(localStorage.getItem('memoryGameHighscores') || '[]');
+}
+
+function formatTime(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// ============================================================================
+// VIEW LAYER (DOM Updates)
+// ============================================================================
+
+const DOM = {
+    gameBoard: document.getElementById('game-board'),
+    congratsScreen: document.getElementById('congratulations-screen'),
+    finalMovesDisplay: document.getElementById('final-moves'),
+    finalTimeDisplay: document.getElementById('final-time'),
+    playAgainBtn: document.getElementById('play-again-btn'),
+    highscoreList: document.getElementById('highscore-list'),
+    highscoresSection: document.getElementById('highscores-section'),
+    gameView: document.getElementById('game-view'),
+    pageTitle: document.getElementById('page-title'),
+    showGameBtn: document.getElementById('show-game-btn'),
+    showHighscoresBtn: document.getElementById('show-highscores-btn'),
+    resetBtn: document.getElementById('reset-btn')
+};
+
+function renderBoard(state) {
+    DOM.gameBoard.innerHTML = '';
+    
+    state.cards.forEach((card) => {
         const cardElement = document.createElement('div');
         cardElement.className = 'card hidden';
         cardElement.dataset.id = card.id;
@@ -64,128 +155,25 @@ function renderBoard() {
             cardElement.classList.remove('hidden');
         }
         
-        cardElement.addEventListener('click', () => handleCardClick(card, cardElement));
-        gameBoard.appendChild(cardElement);
-    });
-}
-
-function handleCardClick(card, element) {
-    if (isProcessing || card.matched || flippedCards.includes(card)) {
-        return;
-    }
-    
-    if (!startTime) {
-        startTime = Date.now();
-        startTimer();
-    }
-    
-    flippedCards.push(card);
-    element.classList.remove('hidden');
-    element.classList.add('flipped');
-    
-    if (flippedCards.length === 2) {
-        isProcessing = true;
-        moves++;
-        checkMatch();
-    }
-}
-
-function checkMatch() {
-    const [card1, card2] = flippedCards;
-    
-    if (card1.symbol === card2.symbol) {
-        card1.matched = true;
-        card2.matched = true;
-        matches++;
-        
-        setTimeout(() => {
-            renderBoard();
-            flippedCards = [];
-            isProcessing = false;
-            
-            if (matches === symbols.length) {
-                clearInterval(timerInterval);
-                setTimeout(() => {
-                    showCongratulations();
-                    resetBoardAndShowHighscores();
-                }, 300);
-            }
-        }, 500);
-    } else {
-        setTimeout(() => {
-            const elements = document.querySelectorAll('.card');
-            elements.forEach(el => {
-                const cardId = parseInt(el.dataset.id);
-                const card = cards.find(c => c.id === cardId);
-                if (!card.matched) {
-                    el.classList.add('hidden');
-                    el.classList.remove('flipped');
-                }
-            });
-            
-            flippedCards = [];
-            isProcessing = false;
-        }, 1000);
-    }
-}
-
-function startTimer() {
-    timerInterval = setInterval(() => {
-        elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-    }, 1000);
-}
-
-function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function showCongratulations() {
-    finalMovesDisplay.textContent = moves;
-    finalTimeDisplay.textContent = formatTime(elapsedTime);
-    lastScore = { moves, time: elapsedTime };
-    const isBestScore = saveHighscore(moves, elapsedTime);
-    loadHighscores();
-    
-    if (isBestScore) {
-        congratsScreen.classList.remove('hidden');
-    }
-}
-
-function saveHighscore(moves, time) {
-    const highscores = JSON.parse(localStorage.getItem('memoryGameHighscores') || '[]');
-    const newScore = { moves, time, date: new Date().toISOString() };
-    
-    let isBestScore = highscores.length === 0;
-    
-    if (!isBestScore) {
-        const bestScore = highscores[0];
-        if (moves < bestScore.moves || (moves === bestScore.moves && time < bestScore.time)) {
-            isBestScore = true;
+        if (state.flippedCards.includes(card)) {
+            cardElement.classList.remove('hidden');
+            cardElement.classList.add('flipped');
         }
-    }
-    
-    highscores.push(newScore);
-    highscores.sort((a, b) => {
-        if (a.moves !== b.moves) return a.moves - b.moves;
-        return a.time - b.time;
+        
+        cardElement.addEventListener('click', () => handleCardClick(card.id));
+        DOM.gameBoard.appendChild(cardElement);
     });
-    const topScores = highscores.slice(0, 10);
-    localStorage.setItem('memoryGameHighscores', JSON.stringify(topScores));
-    
-    return isBestScore;
 }
 
-function loadHighscores() {
-    const highscores = JSON.parse(localStorage.getItem('memoryGameHighscores') || '[]');
+function renderHighscores(lastScore) {
+    const highscores = getHighscores();
     
     if (highscores.length === 0) {
-        highscoreList.innerHTML = '<p class="empty-message">No games completed yet. Start playing!</p>';
+        DOM.highscoreList.innerHTML = '<p class="empty-message">No games completed yet. Start playing!</p>';
         return;
     }
     
-    highscoreList.innerHTML = highscores.map((score, index) => {
+    DOM.highscoreList.innerHTML = highscores.map((score, index) => {
         const isLastScore = lastScore && 
                            score.moves === lastScore.moves && 
                            score.time === lastScore.time;
@@ -203,62 +191,127 @@ function loadHighscores() {
     }).join('');
 }
 
-function hideCongratulations() {
-    congratsScreen.classList.add('hidden');
+function showCongratsModal(moves, time) {
+    DOM.finalMovesDisplay.textContent = moves;
+    DOM.finalTimeDisplay.textContent = formatTime(time);
+    DOM.congratsScreen.classList.remove('hidden');
 }
 
-function resetBoardAndShowHighscores() {
-    cards = [...symbols, ...symbols]
-        .map((symbol, index) => ({ id: index, symbol, matched: false }))
-        .sort(() => Math.random() - 0.5);
-    
-    flippedCards = [];
-    moves = 0;
-    matches = 0;
-    isProcessing = false;
-    startTime = null;
-    elapsedTime = 0;
-    
+function hideCongratsModal() {
+    DOM.congratsScreen.classList.add('hidden');
+}
+
+function showGameView() {
+    DOM.gameView.classList.remove('hidden');
+    DOM.highscoresSection.classList.add('hidden');
+    DOM.pageTitle.textContent = 'Memory Game';
+    DOM.showGameBtn.classList.add('active');
+    DOM.showHighscoresBtn.classList.remove('active');
+}
+
+function showHighscoresView() {
+    DOM.gameView.classList.add('hidden');
+    DOM.highscoresSection.classList.remove('hidden');
+    DOM.pageTitle.textContent = 'Highscores';
+    DOM.showGameBtn.classList.remove('active');
+    DOM.showHighscoresBtn.classList.add('active');
+}
+
+// ============================================================================
+// APPLICATION STATE & CONTROLLERS
+// ============================================================================
+
+let gameState = createInitialState();
+let timerInterval = null;
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        gameState = {
+            ...gameState,
+            elapsedTime: Math.floor((Date.now() - gameState.startTime) / 1000)
+        };
+    }, 1000);
+}
+
+function stopTimer() {
     if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
     }
+}
+
+function handleCardClick(cardId) {
+    if (gameState.isProcessing) return;
     
-    renderBoard();
+    const newState = flipCard(gameState, cardId);
+    if (newState === gameState) return; // No state change
     
-    showingHighscores = true;
-    gameView.classList.add('hidden');
-    pageTitle.textContent = 'Highscores';
-    highscoresSection.classList.remove('hidden');
-    showGameBtn.classList.remove('active');
-    showHighscoresBtn.classList.add('active');
+    gameState = newState;
+    renderBoard(gameState);
+    
+    if (newState.flippedCards.length === 1 && !timerInterval) {
+        startTimer();
+    }
+    
+    if (newState.flippedCards.length === 2) {
+        setTimeout(() => {
+            const matchedState = checkMatch(gameState);
+            gameState = matchedState;
+            renderBoard(gameState);
+            
+            if (isGameComplete(matchedState)) {
+                stopTimer();
+                handleGameComplete(matchedState);
+            }
+        }, 500);
+    }
 }
 
-function showGame() {
-    showingHighscores = false;
-    gameView.classList.remove('hidden');
-    pageTitle.textContent = 'Memory Game';
-    highscoresSection.classList.add('hidden');
-    showGameBtn.classList.add('active');
-    showHighscoresBtn.classList.remove('active');
+function handleGameComplete(state) {
+    const { isBestScore, score } = saveHighscore(state.moves, state.elapsedTime);
+    gameState = { ...state, lastScore: score };
+    
+    if (isBestScore) {
+        showCongratsModal(state.moves, state.elapsedTime);
+    }
+    
+    setTimeout(() => {
+        gameState = createInitialState();
+        renderBoard(gameState);
+        renderHighscores(score);
+        showHighscoresView();
+    }, isBestScore ? 500 : 300);
 }
 
-function showHighscores() {
-    showingHighscores = true;
-    gameView.classList.add('hidden');
-    pageTitle.textContent = 'Highscores';
-    highscoresSection.classList.remove('hidden');
-    showGameBtn.classList.remove('active');
-    showHighscoresBtn.classList.add('active');
-    loadHighscores();
+function handleNewGame() {
+    stopTimer();
+    gameState = createInitialState();
+    renderBoard(gameState);
+    showGameView();
 }
 
-resetBtn.addEventListener('click', initGame);
-playAgainBtn.addEventListener('click', () => {
-    hideCongratulations();
-    initGame();
-});
-showGameBtn.addEventListener('click', showGame);
-showHighscoresBtn.addEventListener('click', showHighscores);
+function handleShowGame() {
+    showGameView();
+}
 
-initGame();
+function handleShowHighscores() {
+    renderHighscores(gameState.lastScore);
+    showHighscoresView();
+}
+
+function handlePlayAgain() {
+    hideCongratsModal();
+    handleNewGame();
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+DOM.resetBtn.addEventListener('click', handleNewGame);
+DOM.playAgainBtn.addEventListener('click', handlePlayAgain);
+DOM.showGameBtn.addEventListener('click', handleShowGame);
+DOM.showHighscoresBtn.addEventListener('click', handleShowHighscores);
+
+renderBoard(gameState);
+showGameView();

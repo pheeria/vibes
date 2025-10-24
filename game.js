@@ -138,7 +138,9 @@ const DOM = {
     pageTitle: document.getElementById('page-title'),
     showGameBtn: document.getElementById('show-game-btn'),
     showHighscoresBtn: document.getElementById('show-highscores-btn'),
-    resetBtn: document.getElementById('reset-btn')
+    resetBtn: document.getElementById('reset-btn'),
+    themeToggleBtn: document.getElementById('theme-toggle-btn'),
+    themeIcon: document.getElementById('theme-icon')
 };
 
 function renderBoard(state) {
@@ -155,12 +157,17 @@ function renderBoard(state) {
             cardElement.classList.remove('hidden');
         }
         
-        if (state.flippedCards.includes(card)) {
+        const isFlipped = state.flippedCards.includes(card);
+        if (isFlipped) {
             cardElement.classList.remove('hidden');
             cardElement.classList.add('flipped');
         }
         
-        cardElement.addEventListener('click', () => handleCardClick(card.id));
+        // Only add click handler if card is not already flipped or matched
+        if (!card.matched && !isFlipped) {
+            cardElement.addEventListener('click', () => handleCardClick(card.id));
+        }
+        
         DOM.gameBoard.appendChild(cardElement);
     });
 }
@@ -304,14 +311,54 @@ function handlePlayAgain() {
     handleNewGame();
 }
 
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    themeIcon.textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    DOM.themeIcon.textContent = isDark ? '🌙' : '☀️';
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+    document.body.classList.add('dark-mode');
+    DOM.themeIcon.textContent = '🌙';
+}
+
+// Add ripple effect tracking
+document.addEventListener('mousedown', (e) => {
+    const target = e.target.closest('.card, .toolbar-btn, button');
+    if (target) {
+        // Don't apply ripple to matched or flipped cards
+        if (target.classList.contains('card') && 
+            (target.classList.contains('matched') || target.classList.contains('flipped'))) {
+            return;
+        }
+        
+        const rect = target.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        target.style.setProperty('--ripple-x', `${x}%`);
+        target.style.setProperty('--ripple-y', `${y}%`);
+    }
+});
 
 DOM.resetBtn.addEventListener('click', handleNewGame);
 DOM.playAgainBtn.addEventListener('click', handlePlayAgain);
 DOM.showGameBtn.addEventListener('click', handleShowGame);
 DOM.showHighscoresBtn.addEventListener('click', handleShowHighscores);
+DOM.themeToggleBtn.addEventListener('click', toggleTheme);
 
 renderBoard(gameState);
 showGameView();

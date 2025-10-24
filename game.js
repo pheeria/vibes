@@ -101,6 +101,94 @@ function getHighscores(mode = 'light') {
     return stored ? JSON.parse(stored) : [];
 }
 
+function getBestScore() {
+    const currentHighscores = getHighscores(currentMode);
+    if (currentHighscores.length > 0) {
+        return { ...currentHighscores[0], mode: currentMode };
+    }
+    
+    const otherMode = currentMode === 'light' ? 'dark' : 'light';
+    const otherHighscores = getHighscores(otherMode);
+    if (otherHighscores.length > 0) {
+        return { ...otherHighscores[0], mode: otherMode };
+    }
+    
+    return null;
+}
+
+function createShareVisual(moves, mode) {
+    const bg = mode === 'light' ? '⬜' : '⬛';
+    const fg = mode === 'light' ? '🟦' : '🟨';
+    
+    const digits = {
+        '0': [[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
+        '1': [[0,1,0],[1,1,0],[0,1,0],[0,1,0],[1,1,1]],
+        '2': [[1,1,1],[0,0,1],[1,1,1],[1,0,0],[1,1,1]],
+        '3': [[1,1,1],[0,0,1],[1,1,1],[0,0,1],[1,1,1]],
+        '4': [[1,0,1],[1,0,1],[1,1,1],[0,0,1],[0,0,1]],
+        '5': [[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
+        '6': [[1,1,1],[1,0,0],[1,1,1],[1,0,1],[1,1,1]],
+        '7': [[1,1,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1]],
+        '8': [[1,1,1],[1,0,1],[1,1,1],[1,0,1],[1,1,1]],
+        '9': [[1,1,1],[1,0,1],[1,1,1],[0,0,1],[1,1,1]]
+    };
+    
+    const movesStr = moves.toString();
+    const digitPatterns = movesStr.split('').map(d => digits[d]);
+    
+    let lines = ['', '', '', '', ''];
+    for (let row = 0; row < 5; row++) {
+        for (let digitIdx = 0; digitIdx < digitPatterns.length; digitIdx++) {
+            for (let col = 0; col < 3; col++) {
+                lines[row] += digitPatterns[digitIdx][row][col] ? fg : bg;
+            }
+            if (digitIdx < digitPatterns.length - 1) {
+                lines[row] += bg;
+            }
+        }
+    }
+    
+    return lines.join('\n');
+}
+
+function handleShare() {
+    const bestScore = getBestScore();
+    if (!bestScore) {
+        alert('No scores yet! Play a game first.');
+        return;
+    }
+    
+    const emoji = bestScore.mode === 'light' ? '🩵' : '💛';
+    const visual = createShareVisual(bestScore.moves, bestScore.mode);
+    const message = `${emoji} It only took me ${bestScore.time}s to solve in ${bestScore.moves} moves!\n\n${visual}`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(message).then(() => {
+            alert('Copied to clipboard!');
+        }).catch(() => {
+            fallbackCopy(message);
+        });
+    } else {
+        fallbackCopy(message);
+    }
+}
+
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        alert('Copied to clipboard!');
+    } catch (e) {
+        alert('Could not copy. Here is your share text:\n\n' + text);
+    }
+    document.body.removeChild(textarea);
+}
+
 function saveHighscore(score, mode = 'light') {
     const key = mode === 'light' ? 'memoryGameHighscores' : 'memoryGameHighscoresDark';
     const highscores = getHighscores(mode);
@@ -132,6 +220,7 @@ const DOM = {
     pageTitle: document.getElementById('page-title'),
     lightModeBtn: document.getElementById('light-mode-btn'),
     darkModeBtn: document.getElementById('dark-mode-btn'),
+    shareBtn: document.getElementById('share-btn'),
     showHighscoresBtn: document.getElementById('show-highscores-btn'),
     resetBtn: document.getElementById('reset-btn')
 };
@@ -314,6 +403,7 @@ DOM.gameBoard.addEventListener('click', (e) => {
 DOM.resetBtn.addEventListener('click', handleNewGame);
 DOM.lightModeBtn.addEventListener('click', switchToLightMode);
 DOM.darkModeBtn.addEventListener('click', switchToDarkMode);
+DOM.shareBtn.addEventListener('click', handleShare);
 DOM.showHighscoresBtn.addEventListener('click', handleShowHighscores);
 
 document.addEventListener('mousedown', (e) => {
